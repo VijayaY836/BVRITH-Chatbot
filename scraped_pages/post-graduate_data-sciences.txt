@@ -1,0 +1,23 @@
+# Data Sciences
+Source: https://bvrithyderabad.edu.in/post-graduate/data-sciences
+
+## Data Sciences
+
+## M.Tech.
+
+This 2 Year MTech in Data Sciences is offered under Department of Information Technology. This course covers the depth and breadth of the subject in the form of interactive lectures, hands-on lab sessions and Projects. As per the JNTUH Regulation during your first year of the PG Program you will be having 3 core subjects, 2 elective subjects, 2 lab subjects with one Audit course per semester. Second year differs wherein during your third semester you will have one Core Elective subject , one Open Elective subject and Phase 1 of Project work. Final semester shall be only Project work. Curriculum covers  statistics, key programming languages, Machine Learning algorithms, and more — with a major project culminating your learning experience.
+
+### What will you do after education!
+
+Machine Learning Engineer
+
+### Where are the opportunities
+
+Python Data Science Tool Box,
+
+### What you may target to become!
+
+Python Data Science stack,
+Statistical Inference,
+Natural Language Processing,
+Web Programming, Networking & Cyber Security

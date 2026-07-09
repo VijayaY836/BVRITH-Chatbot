@@ -1,0 +1,26 @@
+{
+  "image1.png": {
+    "section": "Intro",
+    "keywords": ["intro", "college", "bvrit", "bvrith"]
+  },
+  "image2.png": {
+    "section": "About BVRITH",
+    "keywords": ["about", "college", "bvrit", "bvrith", "established"]
+  },
+  "image3.png": {
+    "section": "Institutional Leadership",
+    "keywords": ["chairman", "k v vishnu raju", "vishnu raju", "founder", "management", "leadership"]
+  },
+  "image4.png": {
+    "section": "Institutional Leadership",
+    "keywords": ["vice chairman", "ravichandran", "rajagopal", "management", "leadership"]
+  },
+  "image5.png": {
+    "section": "Institutional Leadership",
+    "keywords": ["secretary", "aditya vissam", "management", "leadership"]
+  },
+  "image6.png": {
+    "section": "Institutional Leadership",
+    "keywords": ["management", "leadership", "principal", "director"]
+  }
+}
