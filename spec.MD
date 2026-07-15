@@ -53,13 +53,17 @@ Source: bvrit.ac.in, consolidated into `BVRITH_Chatbot_Knowledge_Base.docx` with
 
 ### 1.3 Ingestion & indexing
 
-- `Docx2txtLoader` loads the doc; `RecursiveCharacterTextSplitter` splits on section headings as natural break points, with a chosen chunk size + overlap (tradeoff already decided and documented in code: small chunks → precise retrieval, less context; large chunks → more context, noisier retrieval).
+- `Docx2txtLoader` loads the doc; `RecursiveCharacterTextSplitter` splits on section headings as natural break points, using **chunk size 400 / overlap 120** (confirmed live in the repo). Tradeoff: at this size, chunks stay precise enough for exact-figure questions (fees, dates) without losing surrounding context; the 120-token overlap protects against a fact getting split across a chunk boundary.
 - Every chunk carries `source_filename` and `section_heading` metadata — required for citations and for any future metadata filtering.
 - Chroma store persists to disk and survives a restart (verified: chunk count matches across a fresh process reload).
 
 ### 1.4 Retrieval
 
-- `top_k` starts at 5. Optional metadata filter by `section_heading` (e.g., scoping fee questions to the Fee Structure section) — this is the hook Memory-4's personalization (branch-scoped retrieval) and Obs-4's A/B variants should reuse rather than reimplementing.
+Retrieval is a two-stage pipeline, not pure vector search — this matters for anything in Day 5 that touches retrieval:
+1. Query is embedded and matched against the ChromaDB store (`top_k` starts at 5).
+2. Results are **re-ranked by keyword overlap** before being assembled into the final context sent to the generation LLM.
+
+Any Day 5 work that reads from or reasons about retrieval — Memory-4's branch-scoped personalization, Obs-4's Prompt A/B variants, Gov-1's Giskard dataset construction — must treat this two-stage (vector match → keyword re-rank) behavior as the real retrieval contract, not assume plain top-k vector similarity. Optional metadata filter by `section_heading` (e.g., scoping fee questions to the Fee Structure section) sits on top of this pipeline and is the hook Memory-4 and Obs-4 should reuse rather than reimplementing.
 
 ### 1.5 Grounded generation — the existing system prompt
 
@@ -74,7 +78,7 @@ This prompt is the literal `PROMPT_A` referenced in §4.4 (Obs-4) and the base t
 
 ### 1.6 Chat UI
 
-Streamlit single-page app. Sidebar shows loaded document name, chunk count, retrieval params in use (chunk size, overlap, top_k). Main area is `st.chat_input`/`st.chat_message` with inline citations and in-session conversation history via `st.session_state` — this session state is exactly what Memory-1's `ConversationHistory` formalizes.
+Streamlit single-page app. Sidebar shows loaded document name, chunk count, and retrieval params in use (chunk size 400, overlap 120, top_k 5 — see §1.3–1.4). Main area is `st.chat_input`/`st.chat_message` with inline citations and in-session conversation history via `st.session_state` — this session state is exactly what Memory-1's `ConversationHistory` formalizes.
 
 ### 1.7 Existing 8-dimension evaluation suite (`evaluate.py` / `eval_ui.py`)
 
