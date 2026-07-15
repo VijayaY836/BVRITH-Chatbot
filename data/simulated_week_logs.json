@@ -1,0 +1,22 @@
+{
+  "monday": {"queries": 95, "avg_latency_s": 2.1, "total_cost_usd": 0.28, "errors": 0},
+  "tuesday": {"queries": 102, "avg_latency_s": 2.3, "total_cost_usd": 0.31, "errors": 0},
+  "wednesday": {
+    "queries": 98, "avg_latency_s": 2.2, "total_cost_usd": 4.82, "errors": 0,
+    "detail": {
+      "anomalous_queries": 3,
+      "anomalous_input_tokens": 15000,
+      "normal_input_tokens": 1200,
+      "anomalous_cost_usd": 4.40
+    }
+  },
+  "thursday": {"queries": 110, "avg_latency_s": 3.8, "total_cost_usd": 0.33, "errors": 3},
+  "friday": {
+    "queries": 88, "avg_latency_s": 8.5, "total_cost_usd": 0.27, "errors": 12,
+    "detail": {
+      "error_type": "RateLimitError",
+      "error_window": "16:00-17:00",
+      "avg_latency_outside_window_s": 2.4
+    }
+  }
+}

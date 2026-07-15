@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 from app import DOCX_PATH, answer_question, retrieve, build_or_load_vectorstore
+from observability.logger import logged_llm_call
 
 load_dotenv()
 
@@ -170,20 +171,41 @@ def judge_response(question: str, expected: str, actual: str, criteria: str) -> 
         '{"pass": true/false, "reason": "Brief explanation of why it passed or failed."}'
     )
 
+    result = logged_llm_call(
+        model=JUDGE_MODEL,
+        messages=[
+            {"role": "system", "content": "You are a strict but fair evaluation judge. Respond only in JSON."},
+            {"role": "user", "content": judge_prompt},
+        ],
+        call_type="judge",
+        llm_client=client,
+        temperature=0.0,
+        response_format={"type": "json_object"},
+    )
+    if result["content"] is None:
+        return {"pass": True, "reason": f"Judge error (defaulting to pass): {result['log_entry']['error']}"}
     try:
-        response = client.chat.completions.create(
-            model=JUDGE_MODEL,
-            messages=[
-                {"role": "system", "content": "You are a strict but fair evaluation judge. Respond only in JSON."},
-                {"role": "user", "content": judge_prompt},
-            ],
-            temperature=0.0,
-            response_format={"type": "json_object"},
-        )
-        result = json.loads(response.choices[0].message.content.strip())
-        return result
-    except Exception as e:
+        return json.loads(result["content"].strip())
+    except json.JSONDecodeError as e:
         return {"pass": True, "reason": f"Judge error (defaulting to pass): {str(e)}"}
+
+
+def _score_prompt(prompt: str) -> float:
+    """Runs a single 0.0-1.0 scoring prompt through the (logged) judge LLM, defaulting to
+    0.5 on any failure or unparseable response."""
+    result = logged_llm_call(
+        model=JUDGE_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        call_type="judge",
+        llm_client=client,
+        temperature=0.0,
+    )
+    if result["content"] is None:
+        return 0.5
+    try:
+        return min(1.0, max(0.0, float(result["content"].strip())))
+    except ValueError:
+        return 0.5
 
 
 def compute_ragas_scores(question: str, answer: str, contexts: list) -> dict:
@@ -204,15 +226,7 @@ def compute_ragas_scores(question: str, answer: str, contexts: list) -> dict:
         "Respond with a single float number between 0.0 and 1.0."
     )
 
-    try:
-        resp = client.chat.completions.create(
-            model=JUDGE_MODEL,
-            messages=[{"role": "user", "content": faith_prompt}],
-            temperature=0.0,
-        )
-        scores["faithfulness"] = min(1.0, max(0.0, float(resp.choices[0].message.content.strip())))
-    except Exception:
-        scores["faithfulness"] = 0.5
+    scores["faithfulness"] = _score_prompt(faith_prompt)
 
     # Answer relevancy: how relevant is the answer to the question?
     relev_prompt = (
@@ -223,15 +237,7 @@ def compute_ragas_scores(question: str, answer: str, contexts: list) -> dict:
         "Respond with a single float number between 0.0 and 1.0."
     )
 
-    try:
-        resp = client.chat.completions.create(
-            model=JUDGE_MODEL,
-            messages=[{"role": "user", "content": relev_prompt}],
-            temperature=0.0,
-        )
-        scores["answer_relevancy"] = min(1.0, max(0.0, float(resp.choices[0].message.content.strip())))
-    except Exception:
-        scores["answer_relevancy"] = 0.5
+    scores["answer_relevancy"] = _score_prompt(relev_prompt)
 
     # Context precision: how much of the context is actually needed for the answer?
     prec_prompt = (
@@ -242,15 +248,7 @@ def compute_ragas_scores(question: str, answer: str, contexts: list) -> dict:
         "Respond with a single float number between 0.0 and 1.0."
     )
 
-    try:
-        resp = client.chat.completions.create(
-            model=JUDGE_MODEL,
-            messages=[{"role": "user", "content": prec_prompt}],
-            temperature=0.0,
-        )
-        scores["context_precision"] = min(1.0, max(0.0, float(resp.choices[0].message.content.strip())))
-    except Exception:
-        scores["context_precision"] = 0.5
+    scores["context_precision"] = _score_prompt(prec_prompt)
 
     # Context recall: how much of the relevant info in context is captured in the answer?
     recall_prompt = (
@@ -263,15 +261,7 @@ def compute_ragas_scores(question: str, answer: str, contexts: list) -> dict:
         "Respond with a single float number between 0.0 and 1.0."
     )
 
-    try:
-        resp = client.chat.completions.create(
-            model=JUDGE_MODEL,
-            messages=[{"role": "user", "content": recall_prompt}],
-            temperature=0.0,
-        )
-        scores["context_recall"] = min(1.0, max(0.0, float(resp.choices[0].message.content.strip())))
-    except Exception:
-        scores["context_recall"] = 0.5
+    scores["context_recall"] = _score_prompt(recall_prompt)
 
     return scores
 

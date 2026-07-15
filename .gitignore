@@ -12,6 +12,13 @@ env/
 # Generated / cache data
 chroma_db/
 *.log
+.pytest_cache/
+
+# Runtime logs & user data — may contain PII, never commit (data/simulated_week_logs.json
+# is a fixture and IS tracked; everything else in data/ is generated at runtime)
+data/llm_calls.jsonl
+data/user_profiles.json
+data/ab_test_results.jsonl
 
 # OS / editor
 .DS_Store
