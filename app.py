@@ -926,9 +926,14 @@ if __name__ == "__main__":
         st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
         st.markdown("<div style='font-size:0.72rem;color:#7a9470;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px'>Your Profile</div>", unsafe_allow_html=True)
 
-        user_id = st.text_input("User ID", value=st.session_state.get("user_id", ""), key="user_id_input",
-                                 help="Enter any name/ID to persist your profile (name, branch interest, "
-                                      "preferences) across sessions. Leave blank to stay anonymous.")
+        if "user_id" not in st.session_state:
+            st.session_state.user_id = ""
+        user_id = st.text_input(
+            "User ID",
+            value=st.session_state.user_id,
+            key="user_id_field",
+            help="Persist your profile (name, branch, preferences) across sessions."
+        )
         st.session_state.user_id = user_id
 
         if user_id:
@@ -975,33 +980,25 @@ if __name__ == "__main__":
     if "history" not in st.session_state:
         st.session_state.history = ConversationHistory()
         auto_expire_profiles()  # Ex Memory-5: sweep stale profiles once per fresh session
-    if "pending_input" not in st.session_state:
-        st.session_state.pending_input = None
     if "summary_cache" not in st.session_state:
         st.session_state.summary_cache = {}
     if "call_log" not in st.session_state:
         st.session_state.call_log = []
-
-    # Show chips only when chat is empty
-    if not st.session_state.history.messages:
-        cols = st.columns(len(SUGGESTIONS))
-        for i, suggestion in enumerate(SUGGESTIONS):
-            with cols[i]:
-                if st.button(suggestion, key=f"chip_{i}", use_container_width=True, help=suggestion):
-                    st.session_state.pending_input = suggestion
-                    st.rerun()
 
     # ── Chat history ───────────────────────────────────────────────────────────
     for msg in st.session_state.history.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    # ── Handle input (typed or chip) ───────────────────────────────────────────
-    user_input = st.chat_input("Ask anything about BVRIT Hyderabad…")
+    # Show suggestion chips below chat (persist across conversation)
+    cols = st.columns(len(SUGGESTIONS))
+    for i, suggestion in enumerate(SUGGESTIONS):
+        with cols[i]:
+            if st.button(suggestion, key=f"chip_{i}", use_container_width=True, help=suggestion):
+                st.session_state.chat_input_field = suggestion
 
-    if st.session_state.pending_input:
-        user_input = st.session_state.pending_input
-        st.session_state.pending_input = None
+    # ── Handle input (typed or chip) ───────────────────────────────────────────
+    user_input = st.chat_input("Ask anything about BVRIT Hyderabad…", key="chat_input_field")
 
     # ── Ex Obs-3: reject overlong input before it ever reaches retrieval/LLM ──────
     if user_input:
